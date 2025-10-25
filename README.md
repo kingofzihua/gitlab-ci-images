@@ -26,21 +26,32 @@ create_tag:
       # 从远程仓库获取最新的标签信息，并删除本地不存在于远程的标签
       git fetch origin --prune --prune-tags
       
-      NEXT_VERSION=$(gsemver bump)
+      NEXT_VERSION=$(gsemver -c .gitlab/gsemver.yaml bump)
       echo "Next version determined by commits: ${NEXT_VERSION}"
+
+      # --- 版本检查逻辑 ---
+      # 分割版本号
+      MAJOR=$(echo "$NEXT_VERSION" | cut -d. -f1)
+      MINOR=$(echo "$NEXT_VERSION" | cut -d. -f2)
       
-      if git ls-remote --tags origin | grep -q "refs/tags/${NEXT_VERSION}"; then
-        # 如果标签已存在，则打印信息并成功退出。
-        echo "Tag $NEXT_VERSION already exists. Nothing to do."
+      # 检查版本是否小于 0.1.0
+      if [ "$MAJOR" -lt 0 ] || { [ "$MAJOR" -eq 0 ] && [ "$MINOR" -lt 1 ]; }; then
+        echo "Version ${NEXT_VERSION} is less than 0.1.0. Skipping tag creation."
       else
-        git config --global user.name "${GITLAB_USER_NAME}"
-        git config --global user.email "${GITLAB_USER_EMAIL}"
-        echo "Creating and pushing new tag: ${NEXT_VERSION}"
+        # --- 原有的标签创建逻辑 ---
+        if git ls-remote --tags origin | grep -q "refs/tags/${NEXT_VERSION}"; then
+          # 如果标签已存在，则打印信息并成功退出。
+          echo "Tag $NEXT_VERSION already exists. Nothing to do."
+        else
+          git config --global user.name "${GITLAB_USER_NAME}"
+          git config --global user.email "${GITLAB_USER_EMAIL}"
+          echo "Creating and pushing new tag: ${NEXT_VERSION}"
       
-        git tag -a "${NEXT_VERSION}" -m "Release ${NEXT_VERSION}"
+          git tag -a "${NEXT_VERSION}" -m "Release ${NEXT_VERSION}"
       
-        git push origin --tags
-        echo "Tag ${NEXT_VERSION} pushed successfully."
+          git push origin --tags
+          echo "Tag ${NEXT_VERSION} pushed successfully."
+        fi
       fi
 
   rules:

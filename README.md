@@ -17,7 +17,7 @@
 ```yaml
 create_tag:
   stage: release
-  image: kingofzihua/gsemver:0.10.1
+  image: kingofzihua/gsemver:latest
   script:
     - |
       git remote set-url origin "http://gitlab-ci-token:${GITLAB_USER_TOKEN}@${CI_REPOSITORY_URL#*@}"
